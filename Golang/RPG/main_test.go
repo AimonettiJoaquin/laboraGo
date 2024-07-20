@@ -18,7 +18,8 @@ func TestCreateCreature(t *testing.T) {
 
 func TestCreateWeapon(t *testing.T) {
 	w := &Weapons{}
-	w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false)
+	property := createProperty(false, false, false, false, false, false, false, false, false)
+	w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false, false, property)
 	if len(w.weapons) != 1 {
 		t.Error("Failed to create weapon")
 	}
@@ -29,7 +30,8 @@ func TestCreateWeapon(t *testing.T) {
 
 func TestFindWeapon(t *testing.T) {
 	w := &Weapons{}
-	w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false)
+	property := createProperty(false, false, false, false, false, false, false, false, false)
+	w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false, false, property)
 	weapon := w.findWeapon("Zweihänder")
 	if weapon.name != "Zweihänder" {
 		t.Error("Failed to find weapon")
@@ -40,7 +42,8 @@ func TestEquipAndFindEquipWeapon(t *testing.T) {
 	c := &Creatures{}
 	c.createCreature("Goblin", small, humanoide, 6, 1, 7, 8, 14, 10, 10, 8, 8)
 	w := &Weapons{}
-	w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false)
+	property := createProperty(false, false, false, false, false, false, false, false, false)
+	w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false, false, property)
 	Zweihänder := w.findWeapon("Zweihänder")
 	goblin := c.findCreature("Goblin")
 	c.equipWeapon(goblin, Zweihänder)

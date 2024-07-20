@@ -9,10 +9,9 @@ import (
 
 func main() {
 	jugador := createCaracter()
-
 	initialEquipment(jugador)
-
 	for !randomEncounter(jugador) {
+		wait()
 	}
 
 }
@@ -26,11 +25,27 @@ type Weapon struct {
 	damage      int
 	oneHand     bool
 	equiped     bool
+	finesse     bool
+	properties  WeaponsProperty
+}
+type WeaponsProperty struct {
+	Ammunition bool
+	Finesse    bool
+	Heavy      bool
+	Light      bool
+	Loading    bool
+	Range      bool
+	Reach      bool
+	Thrown     bool
+	TwoHanded  bool
+	Versatile  bool
+}
+type WeaponsProperties struct {
+	weaponsProperties []WeaponsProperty
 }
 type Weapons struct {
 	weapons []Weapon
 }
-
 type Armor struct {
 	name        string
 	cost        float64
@@ -142,7 +157,8 @@ func initialEquipment(jugador *Creature) {
 		if equipoInicial == "Mandoble" {
 			fmt.Println("El guerrero se pone su cota de malla y toma su Zweihander")
 			wait()
-			w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false)
+			property := createProperty(false, false, false, false, false, false, false, false, false)
+			w.createWeapon("Zweihänder", 50, 6, "La Zweihänder es una gran espada a dos manos, usada por infantería medieval para romper formaciones.", 2, 6, false, false, property)
 			Zweihänder := w.findWeapon("Zweihänder")
 			c.equipWeapon(jugador, Zweihänder)
 			a.createArmor("Cota de Malla", 75, 55, "La cota de malla es una armadura de anillos de metal entrelazados, ofreciendo flexibilidad y protección.", 16, false)
@@ -155,7 +171,8 @@ func initialEquipment(jugador *Creature) {
 		} else if equipoInicial == "Espada" {
 			fmt.Println("El guerrero se pone su cota de malla, toma su escudo y su espada larga.")
 			wait()
-			w.createWeapon("Espada larga", 15, 3, "La espada larga es una espada medieval de doble filo, usada con una o ambas manos.", 1, 8, true)
+			property := createProperty(false, false, false, false, false, false, false, false, false)
+			w.createWeapon("Espada larga", 15, 3, "La espada larga es una espada medieval de doble filo, usada con una o ambas manos.", 1, 8, true, false, property)
 			espadaLarga := w.findWeapon("Espada larga")
 			c.equipWeapon(jugador, espadaLarga)
 			a.createArmor("Cota de Malla", 75, 55, "La cota de malla es una armadura de anillos de metal entrelazados, ofreciendo flexibilidad y protección.", 16, false)
@@ -178,32 +195,59 @@ func wait() {
 }
 
 func randomEncounter(jugador *Creature) bool {
-
-	encuentro := rollD(3)
-	switch encuentro {
-	case 1:
+	encuentro := rollD(10)
+	encuentro = 1
+	if encuentro >= 3 {
 		goblinEncounter(jugador)
 		return false
-	case 2:
-		chestEncounter(jugador)
+	} else if encuentro == 1 {
+
+		chest := chestEncounter(jugador)
+		switch chest {
+		case 1:
+			mimicEncounter(jugador)
+		case 2:
+			if jugador.Strength >= 20 {
+				fmt.Println("Tu fuerza no puede subir mas.")
+			} else {
+				jugador.Strength += 2
+				fmt.Println("Tu fuerza ha aumentado en 2 puntos.")
+				fmt.Println("Fuerza actual:", jugador.Strength)
+			}
+			checkLvlUp(jugador, 50)
+
+		case 3:
+			jugador.CurrentHitPoints = jugador.MaxHitPoints
+			fmt.Println("Te sientes recuperado.")
+			fmt.Println("HP:", jugador.CurrentHitPoints, "/", jugador.CurrentHitPoints)
+			checkLvlUp(jugador, 20)
+		case 4:
+			checkLvlUp(jugador, 10)
+		}
 		return false
-	case 3:
+	} else if encuentro == 2 {
 		fmt.Println("***************************")
 		fmt.Println("No has encontrado nada")
 		wait()
 		return false
 	}
+
 	return false
 }
 
-func chestEncounter(jugador *Creature) {
+func chestEncounter(j *Creature) int {
 	fmt.Println("****************************")
 	fmt.Println("Has encontrado un cofre")
 	wait()
 	chestArt()
 	chest := rollD(100)
+	chest = 90
 	if chest >= 95 {
+		fmt.Println("NO ERA UN COFRE, ERA UN MIMIC!!! .")
+		wait()
 		mimicArt()
+		wait()
+		return 1
 	} else if chest >= 90 {
 		fmt.Println("El jugador encuentra un cofre en la oscuridad de la caverna.")
 		fmt.Println("Con cuidado, abre el cofre y dentro descubre una poción mágica.")
@@ -212,9 +256,7 @@ func chestEncounter(jugador *Creature) {
 		wait()
 		potionArt()
 		wait()
-		jugador.Strength += 2
-		fmt.Println("Tu fuerza ha aumentado en 2 puntos.")
-		fmt.Println("Fuerza actual:", jugador.Strength)
+		return 2
 	} else if chest >= 85 {
 		fmt.Println("El jugador encuentra un cofre en la oscuridad de la caverna.")
 		fmt.Println("Con cuidado, abre el cofre y dentro descubre una poción mágica.")
@@ -223,19 +265,12 @@ func chestEncounter(jugador *Creature) {
 		wait()
 		potionArt()
 		wait()
-		jugador.CurrentHitPoints = jugador.MaxHitPoints
-		fmt.Println("Te sientes recuperado.")
-		fmt.Println("HP:", jugador.CurrentHitPoints, "/", jugador.CurrentHitPoints)
-	} else if chest <= 5 {
-		fmt.Println("NO ERA UN COFRE, ERA UN MIMIC!!! .")
-		wait()
-		mimicArt()
-		wait()
-		mimicEncounter(jugador)
+
+		return 3
 	} else {
 		fmt.Println("El cofre esta vacio.")
 		fmt.Println("****************************")
-		wait()
+		return 4
 	}
 
 }
@@ -350,42 +385,49 @@ func lvlUp(j *Creature) {
 	}
 }
 
-func checkLvlUp(j *Creature, xp int) {
+func checkLvlUp(j *Creature, xp int) bool {
+	j.xp += xp
+	fmt.Println("Has ganado", xp, "puntos de experiencia.")
+
 	switch j.Level {
 	case 1:
-		j.xp += xp
+		fmt.Println("Experiencia:", j.xp, "/300")
 		if j.xp >= 300 {
-			lvlUp(j)
+			return true
 		}
 	case 2:
-		j.xp += xp
 		if j.xp >= 900 {
-			lvlUp(j)
+			fmt.Println("Experiencia:", j.xp, "/900")
+			return true
 		}
 	case 3:
-		j.xp += xp
 		if j.xp >= 2700 {
-			lvlUp(j)
+			fmt.Println("Experiencia:", j.xp, "2700")
+			return true
 		}
 	case 4:
-		j.xp += xp
 		if j.xp >= 6500 {
-			lvlUp(j)
+			fmt.Println("Experiencia:", j.xp, "/6500")
+			return true
 		}
 	case 5:
-		j.xp += xp
 		if j.xp >= 14000 {
-			lvlUp(j)
+			fmt.Println("Experiencia:", j.xp, "/14000")
+			return true
 		}
+	default:
+		return false
 	}
+	return false
 }
 func mimicEncounter(jugador *Creature) bool {
 	w := &Weapons{}
 	c := &Creatures{}
 	a := &Armors{}
-	c.createCreature("Mimic", medium, monstrosity, 6, 1, 7, 8, 14, 10, 10, 8, 8)
-	mimic := c.findCreature("Goblin")
-	w.createWeapon("Bite", 0, 0, "Bite.", 2, 8, true)
+	c.createCreature("Mimic", medium, monstrosity, 8, 9, 58, 17, 12, 15, 5, 13, 8)
+	mimic := c.findCreature("Mimic")
+	property := createProperty(false, false, false, false, false, false, false, false, false)
+	w.createWeapon("Bite", 0, 0, "Bite.", 2, 8, true, false, property)
 	bite := w.findWeapon("Bite")
 	c.equipWeapon(mimic, bite)
 	a.createArmor("Armadura natural", 0, 0, "El mimic posee una piel dura y una gran resistencia, pero su inmoviliad lo vuelve un objetivo facil.", 12, false)
@@ -399,7 +441,7 @@ func mimicEncounter(jugador *Creature) bool {
 			return true
 		} else if c.attack(jugador, mimic) {
 			goblinDeadArt()
-			checkLvlUp(jugador, 50)
+			checkLvlUp(jugador, 450)
 
 			return false
 		}
@@ -421,7 +463,8 @@ func goblinEncounter(jugador *Creature) bool {
 	wait()
 	c.createCreature("Goblin", small, humanoide, 6, 1, 7, 8, 14, 10, 10, 8, 8)
 	goblin := c.findCreature("Goblin")
-	w.createWeapon("Scimitarra", 15, 3, "Scimitarra.", 1, 6, true)
+	property := createProperty(false, true, false, false, false, false, false, false, false)
+	w.createWeapon("Scimitarra", 15, 3, "Scimitarra.", 1, 6, true, false, property)
 	scimitarra := w.findWeapon("Scimitarra")
 	c.equipWeapon(goblin, scimitarra)
 	a.createArmor("Armadura de cuero", 10, 10, "Armadura de cuero.", 13, false)
@@ -617,25 +660,36 @@ func (c *Creatures) attack(attacker *Creature, defender *Creature) bool {
 	attackerWeapon := c.findEquipedWeapon(attacker)
 	fmt.Println(attacker.name, "Usa su", attackerWeapon.name)
 	d20 := rollD(20)
-	attackerToHit := d20 + attacker.StrMod + attacker.ProficiencyBonus
-	fmt.Println("El ataque fue un: ", d20, "+", attacker.StrMod, "+", attacker.ProficiencyBonus)
+	var attackerMod int
+	if attackerWeapon.properties.Finesse && attacker.DexMod > attacker.StrMod {
+		attackerMod = attacker.DexMod
+	} else {
+		attackerMod = attacker.StrMod
+	}
+	attackerToHit := d20 + attackerMod + attacker.ProficiencyBonus
+	fmt.Println("La tirada de ataque:", d20, "Ataque", "+ Modificador de ataque", attackerMod, "+ Proficiencia", attacker.ProficiencyBonus, "=", (d20 + attackerMod + attacker.ProficiencyBonus))
+	fmt.Println("La armadura del", defender.name, " es: ", defender.ArmorClass)
 	wait()
-	fmt.Println("La armadura del ", defender.name, "es: ", defender.ArmorClass)
-
 	if attackerToHit >= defender.ArmorClass {
 
 		weaponDice := attackerWeapon.nroDice
+		weaponDice2 := attackerWeapon.nroDice
+		nroDice := attackerWeapon.nroDice
 		attackerWDamage := attackerWeapon.damage
 		var damage int
 		for weaponDice > 0 {
 			damage += rollD(attackerWDamage)
 			weaponDice--
 		}
-		damage += attacker.StrMod
-		fmt.Println("La vida de ", defender.name, "es: ", defender.CurrentHitPoints)
+		damageNoMod := damage
+		damage += attackerMod
+		if damage == 0 {
+			damage++
+		}
+		fmt.Println(defender.name, "tiene:", defender.CurrentHitPoints, "Puntos de vida")
 		defender.CurrentHitPoints = defender.CurrentHitPoints - damage
 		if defender.CurrentHitPoints <= 0 {
-			fmt.Println("El daño fue de: ", damage)
+			fmt.Println("Daño:", nroDice, "d", weaponDice2, damageNoMod, "+", attackerMod, "=", damage)
 			fmt.Println(defender.name, " ha muerto")
 			fmt.Println("**************************")
 			wait()
@@ -655,7 +709,7 @@ func (c *Creatures) attack(attacker *Creature, defender *Creature) bool {
 }
 
 // FUNCIONES DE WEAPON
-func (w *Weapons) createWeapon(name string, cost float64, weight float64, description string, nroDice int, damage int, oneHand bool) {
+func (w *Weapons) createWeapon(name string, cost float64, weight float64, description string, nroDice int, damage int, oneHand bool, finesse bool, properties *WeaponsProperty) {
 	weapon := Weapon{
 		name:        name,
 		cost:        cost,
@@ -665,8 +719,24 @@ func (w *Weapons) createWeapon(name string, cost float64, weight float64, descri
 		damage:      damage,
 		oneHand:     oneHand,
 		equiped:     false,
+		finesse:     finesse,
+		properties:  *properties,
 	}
 	w.weapons = append(w.weapons, weapon)
+}
+func createProperty(ammo, finesse, heavy, light, loading, raange, reach, throw, twoHanded bool) *WeaponsProperty {
+	property := WeaponsProperty{
+		Ammunition: ammo,
+		Finesse:    finesse,
+		Heavy:      heavy,
+		Light:      light,
+		Loading:    loading,
+		Range:      raange,
+		Reach:      reach,
+		Thrown:     throw,
+		TwoHanded:  twoHanded,
+	}
+	return &property
 }
 
 func (c *Creatures) equipWeapon(creature *Creature, weapon *Weapon) {
