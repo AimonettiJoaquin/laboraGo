@@ -1,0 +1,2 @@
+server_address: ":8080"
+database_url: "root:1234@tcp(localhost:3306)/test"
